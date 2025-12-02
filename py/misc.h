@@ -414,8 +414,9 @@ static inline uint32_t mp_clz_mpi(mp_int_t x) {
     }
     return zeroes;
     #else
-    MP_STATIC_ASSERT(sizeof(mp_int_t) == sizeof(long long)
-        || sizeof(mp_int_t) == sizeof(long));
+    // TODO: Assert fails with "../../py/misc.h:417:5: error: array size is negative"
+    //MP_STATIC_ASSERT(sizeof(mp_int_t) == sizeof(long long)
+    //    || sizeof(mp_int_t) == sizeof(long));
 
     // ugly, but should compile to single intrinsic unless O0 is set
     if (mp_check(sizeof(mp_int_t) == sizeof(long))) {

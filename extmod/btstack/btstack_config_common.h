@@ -14,8 +14,8 @@
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1021
-#define MAX_NR_GATT_CLIENTS 1
-#define MAX_NR_HCI_CONNECTIONS 1
+#define MAX_NR_GATT_CLIENTS 3
+#define MAX_NR_HCI_CONNECTIONS 3
 #define MAX_NR_L2CAP_SERVICES  3
 #define MAX_NR_L2CAP_CHANNELS  3
 #define MAX_NR_RFCOMM_MULTIPLEXERS 1

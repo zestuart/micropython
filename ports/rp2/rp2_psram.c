@@ -92,7 +92,16 @@ size_t __no_inline_not_in_flash_func(psram_detect)(void) {
     // Disable direct csr.
     qmi_hw->direct_csr &= ~(QMI_DIRECT_CSR_ASSERT_CS1N_BITS | QMI_DIRECT_CSR_EN_BITS);
 
-    if (kgd == 0x5D) {
+    // M6.5 patch (2026-04-27): accept any non-trivial KGD response
+    // so non-APS6404 PSRAM chips on the GitHub Universe edition
+    // hardware get detected.  Stash kgd/eid for inspection from
+    // Python via psram_id().
+    extern uint8_t _m6_5_psram_kgd;
+    extern uint8_t _m6_5_psram_eid;
+    _m6_5_psram_kgd = kgd;
+    _m6_5_psram_eid = eid;
+
+    if (kgd != 0 && kgd != 0xff) {
         psram_size = 1024 * 1024; // 1 MiB
         uint8_t size_id = eid >> 5;
         if (eid == 0x26 || size_id == 2) {
@@ -101,11 +110,21 @@ size_t __no_inline_not_in_flash_func(psram_detect)(void) {
             psram_size *= 2; // 2 MiB
         } else if (size_id == 1) {
             psram_size *= 4; // 4 MiB
+        } else {
+            // Unknown size_id — assume 8 MiB on the GitHub edition
+            // (silicon datasheet says >= 8 MiB on the badge).  If
+            // wrong we'll over-promise; gc_add will only use what's
+            // physically backed.
+            psram_size *= 8;
         }
     }
 
     return psram_size;
 }
+
+// M6.5: globals exposed via Python wrapper.
+uint8_t _m6_5_psram_kgd = 0;
+uint8_t _m6_5_psram_eid = 0;
 
 size_t __no_inline_not_in_flash_func(psram_init)(uint cs_pin) {
     gpio_set_function(cs_pin, GPIO_FUNC_XIP_CS1);

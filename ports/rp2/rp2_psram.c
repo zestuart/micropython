@@ -98,8 +98,31 @@ size_t __no_inline_not_in_flash_func(psram_detect)(void) {
     // Python via psram_id().
     extern uint8_t _m6_5_psram_kgd;
     extern uint8_t _m6_5_psram_eid;
+    extern uint8_t _m6_5_psram_id_bytes[8];  // all 7 + null
     _m6_5_psram_kgd = kgd;
     _m6_5_psram_eid = eid;
+
+    // M6.5: ALSO do a non-QPI single-line ID read to compare.
+    // Many PSRAM chips boot in single-line mode and don't accept
+    // QPI commands until enabled.  Re-do the ID read here without
+    // the IWIDTH=Q flag, capturing all 7 bytes.
+    qmi_hw->direct_csr = 30 << QMI_DIRECT_CSR_CLKDIV_LSB | QMI_DIRECT_CSR_EN_BITS;
+    while ((qmi_hw->direct_csr & QMI_DIRECT_CSR_BUSY_BITS) != 0) {
+    }
+    qmi_hw->direct_csr |= QMI_DIRECT_CSR_ASSERT_CS1N_BITS;
+    for (size_t i = 0; i < 7; i++) {
+        if (i == 0) {
+            qmi_hw->direct_tx = 0x9f;  // single-line, default IWIDTH=S
+        } else {
+            qmi_hw->direct_tx = 0xff;
+        }
+        while ((qmi_hw->direct_csr & QMI_DIRECT_CSR_TXEMPTY_BITS) == 0) {
+        }
+        while ((qmi_hw->direct_csr & QMI_DIRECT_CSR_BUSY_BITS) != 0) {
+        }
+        _m6_5_psram_id_bytes[i] = qmi_hw->direct_rx;
+    }
+    qmi_hw->direct_csr &= ~(QMI_DIRECT_CSR_ASSERT_CS1N_BITS | QMI_DIRECT_CSR_EN_BITS);
 
     if (kgd != 0 && kgd != 0xff) {
         psram_size = 1024 * 1024; // 1 MiB
@@ -125,6 +148,7 @@ size_t __no_inline_not_in_flash_func(psram_detect)(void) {
 // M6.5: globals exposed via Python wrapper.
 uint8_t _m6_5_psram_kgd = 0;
 uint8_t _m6_5_psram_eid = 0;
+uint8_t _m6_5_psram_id_bytes[8] = {0};
 
 size_t __no_inline_not_in_flash_func(psram_init)(uint cs_pin) {
     gpio_set_function(cs_pin, GPIO_FUNC_XIP_CS1);

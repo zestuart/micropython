@@ -112,6 +112,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(rp2_enable_user_msc_obj, rp2_enable_user_msc);
 // M6.5 patch (2026-04-27): expose PSRAM detection result for diagnosis.
 extern uint8_t _m6_5_psram_kgd;
 extern uint8_t _m6_5_psram_eid;
+extern uint8_t _m6_5_psram_id_bytes[8];
 static mp_obj_t rp2_psram_id(void) {
     mp_obj_t tup[2] = {
         mp_obj_new_int(_m6_5_psram_kgd),
@@ -120,6 +121,15 @@ static mp_obj_t rp2_psram_id(void) {
     return mp_obj_new_tuple(2, tup);
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(rp2_psram_id_obj, rp2_psram_id);
+
+static mp_obj_t rp2_psram_id_full(void) {
+    mp_obj_t list_items[7];
+    for (int i = 0; i < 7; i++) {
+        list_items[i] = mp_obj_new_int(_m6_5_psram_id_bytes[i]);
+    }
+    return mp_obj_new_tuple(7, list_items);
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(rp2_psram_id_full_obj, rp2_psram_id_full);
 
 static const mp_rom_map_elem_t rp2_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),            MP_ROM_QSTR(MP_QSTR_rp2) },
@@ -131,6 +141,7 @@ static const mp_rom_map_elem_t rp2_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_enable_msc),          MP_ROM_PTR(&rp2_enable_user_msc_obj) },
     { MP_ROM_QSTR(MP_QSTR_is_msc_busy),         MP_ROM_PTR(&rp2_is_msc_busy_obj) },
     { MP_ROM_QSTR(MP_QSTR_psram_id),            MP_ROM_PTR(&rp2_psram_id_obj) },
+    { MP_ROM_QSTR(MP_QSTR_psram_id_full),       MP_ROM_PTR(&rp2_psram_id_full_obj) },
 
 
     #if MICROPY_PY_NETWORK_CYW43
